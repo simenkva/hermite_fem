@@ -3,6 +3,7 @@ from scipy.special import gammaln
 import matplotlib.pyplot as plt
 from scipy.integrate import fixed_quad
 from scipy.sparse import lil_matrix
+from scipy.linalg import eigh
 from time import time
 from icecream import ic
 
@@ -73,13 +74,30 @@ def hermite(n_nodes, n_diff, plot=False):
     return {'n_nodes': n_nodes, 'n_diff': n_diff, 'C': C}
 
 
-def hermite_fem_overlap_matrix(x_el, basis, difforder=[0,0], weight=lambda x: np.ones_like(x)):
+def hermite_fem_matrix(x_el, basis, difforder=[0,0], weight=lambda x: np.ones_like(x)):
+    """
+    Assemble a finite element matrix for Hermite basis functions.
+    
+
+    Args:
+        x_el (array-like): Array of element boundaries.
+        basis (dict): Dictionary containing basis function information.
+        difforder (list, optional): List of differentiation orders for the basis functions. Defaults to [0, 0].
+        weight (function, optional): Weighting function for the integration. Defaults to lambda x: np.ones_like(x).
+
+    Returns:
+        csr_matrix: Finite element matrix.
+
+    Raises:
+        AssertionError: If the number of degrees of freedom does not match the length of the basis function coefficients.
+
+    """
+        
     n_nodes_per_el = basis['n_nodes']
     n_diff = basis['n_diff']
     C = basis['C'] # coeffs of element basis functions
     n_beta = n_diff + 1
     n_dof = n_nodes_per_el*n_beta
-    assert(n_dof == len(C))
     n_el = len(x_el) - 1
     
     # set up FEM nodes
@@ -100,7 +118,7 @@ def hermite_fem_overlap_matrix(x_el, basis, difforder=[0,0], weight=lambda x: np
         version = 2
 
         if version == 1:
-            # version 1:
+            # version 1 has a
             e = I // (n_beta*(n_nodes_per_el-1))
             i0 = I % (n_beta*(n_nodes_per_el-1))
             i = i0 % (n_nodes_per_el-1)
@@ -187,7 +205,6 @@ def hermite_fem_overlap_matrix(x_el, basis, difforder=[0,0], weight=lambda x: np
             
 
 
-
 if __name__ == '__main__':
 
 
@@ -195,8 +212,8 @@ if __name__ == '__main__':
     basis = hermite(3, 1, plot=True)
     x_el = np.linspace(0,10,40)
     tic = time()
-    S = hermite_fem_overlap_matrix(x_el, basis, difforder=[0,0], weight = lambda x: x)
-    T = .5 * hermite_fem_overlap_matrix(x_el, basis, difforder=[1,1], weight = lambda x: x)
-    V = hermite_fem_overlap_matrix(x_el, basis, difforder=[0,0], weight = lambda x: -1.0)
+    S = hermite_fem_matrix(x_el, basis, difforder=[0,0], weight = lambda x: x)
+    T = .5 * hermite_fem_matrix(x_el, basis, difforder=[1,1], weight = lambda x: x)
+    V = hermite_fem_matrix(x_el, basis, difforder=[0,0], weight = lambda x: -1.0)
     toc = time()
     ic(toc-tic)
